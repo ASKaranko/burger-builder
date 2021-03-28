@@ -3,6 +3,9 @@ import BurgerIngredient from "./BurgerIngredient/BurgerIngredient";
 import classes from './Burger.module.css';
 
 const burger = (props) => {
+	// по умолчанию Route передает props.match только родительскому компоненту,
+	// чтобы получить их из BurgerBuilder нужер использовать HOC withRouter
+	// нужно обернуть withRouter(burger) в export default
 	let transformedIngredients = Object.keys(props.ingredients)
 			.map(igKey => {
 				return [...Array(props.ingredients[igKey])].map((_, i) => {
