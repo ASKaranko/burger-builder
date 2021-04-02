@@ -1,11 +1,20 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {BrowserRouter} from "react-router-dom";
+import {Provider} from 'react-redux';
+import {createStore} from 'redux';
+import reducer from "./store/reducer";
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-ReactDOM.render(<BrowserRouter><App /></BrowserRouter>, document.getElementById('root'));
+const store = createStore(reducer);
+
+// Provider Redux должен включать в себя и BrowserRouter,
+// он должен быть самым первым компонентом
+ReactDOM.render(<Provider store={store}><BrowserRouter
+			// basename="/askaranko.co/burger-builder/"
+	><App /></BrowserRouter></Provider>, document.getElementById('root'));
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
