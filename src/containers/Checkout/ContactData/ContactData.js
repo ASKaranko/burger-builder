@@ -5,6 +5,9 @@ import axios from '../../../axios-orders';
 import Spinner from '../../../components/UI/Spinner/Spinner';
 import Input from '../../../components/UI/Input/Input';
 import {connect} from 'react-redux';
+import withErrorHandler from "../../../hoc/withErrorHandler/withErrorHandler";
+import * as actions from '../../../store/actions/index';
+import {updateObject, checkValidity} from "../../../shared/utility";
 
 class ContactData extends Component {
 	state = {
@@ -72,6 +75,7 @@ class ContactData extends Component {
 					value: '',
 					validation: {
 						required: true,
+						isEmail: true,
 					},
 					valid: false,
 					touched: false
@@ -93,12 +97,14 @@ class ContactData extends Component {
 			},
 		},
 		formIsValid: false,
-		loading: false,
+
+		// заменено action в Redux
+		// loading: false,
 	}
 
 	orderHandler = (e) => {
 		e.preventDefault();
-		this.setState({loading: true});
+		// this.setState({loading: true});
 
 		// Получаем данные из orderForm состояния
 		const formData = {};
@@ -112,61 +118,57 @@ class ContactData extends Component {
 		const order = {
 			ingredients: this.props.ings,
 			price: this.props.price,
-			orderData: formData
-		}
-		axios.post('/orders.json', order)
-				.then(response => {
-					this.setState({
-						loading: false,
-					});
-					this.props.history.push('/');
-				})
-				.catch(error => {
-					this.setState({
-						loading: false,
-					});
-					console.log('Huston, we have an error', error);
-				})
-	}
-
-	checkValidity = (value, rules) => {
-		let isValid = true;
-
-		// Если у Input не указан объект validation, осуществим проверку
-		// Дублирует логику добавления для Input пустого validation: {}
-		if (!rules) {
-			return true;
+			orderData: formData,
+			userId: this.props.userId
 		}
 
-		if (rules.required) {
-			isValid = value.trim() !== '' && isValid
-		}
+		// Axios перемещен в orders action creator of Redux
+		// axios.post('/orders.json', order)
+		// 		.then(response => {
+		// 			this.setState({
+		// 				loading: false,
+		// 			});
+		// 			this.props.history.push('/');
+		// 		})
+		// 		.catch(error => {
+		// 			this.setState({
+		// 				loading: false,
+		// 			});
+		// 			console.log('Huston, we have an error', error);
+		// 		})
 
-		if (rules.minLength) {
-			isValid = value.length >= rules.minLength && isValid;
-		}
-
-		if (rules.maxLength) {
-			isValid = value.length <=rules.maxLength && isValid;
-		}
-
-		return isValid;
+		this.props.onOrderBurger(order, this.props.token);
 	}
 
 	inputChangedHandler = (event, inputIdentifier) => {
+		// СТРУКТУРА НИЖЕ ИЗМЕНЕНА, ТАК КАК ИСПОЛЬЗУЕТСЯ UTILITY FUNCTION
+
 		// Мы вернем новый объект, но он не будем полной копией,
 		// так как вложенные объекты будут только pointer-ами
-		const updatedOrderForm = {...this.state.orderForm};
+		// const updatedOrderForm = {...this.state.orderForm};
 		// Чтобы сделать полню копию по нужнову свойству (email, country и другое)
 		// Используем spread для нужного свойства отдельно, так как он
 		// содержит объект как значение
-		const updatedFormElement = {...updatedOrderForm[inputIdentifier]};
+
 		// Далее мы не делаем клоны вложенности дальнейшей - например,
 		// elementConfig, так как нас интересует только value
-		updatedFormElement.value = event.target.value;
-		updatedFormElement.valid = this.checkValidity(updatedFormElement.value,
-						updatedFormElement.validation);
-		updatedFormElement.touched = true;
+		// updatedFormElement.value = event.target.value;
+		// updatedFormElement.valid = this.checkValidity(updatedFormElement.value,
+		// 				updatedFormElement.validation);
+		// updatedFormElement.touched = true;
+
+		// меняем весь объект по нужному свойству
+		// updatedOrderForm[inputIdentifier] = updatedFormElement;
+		const updatedFormElement = updateObject(
+				this.state.orderForm[inputIdentifier], {
+					value: event.target.value,
+					valid: checkValidity(event.target.value,
+							this.state.orderForm[inputIdentifier].validation),
+					touched: true,
+				});
+		const updatedOrderForm = updateObject(this.state.orderForm, {
+			[inputIdentifier]: updatedFormElement
+		});
 
 		// Проверяем на валидность всю форму в целом
 		let formIsValid = true;
@@ -176,8 +178,6 @@ class ContactData extends Component {
 			}
 		}
 
-		// меняем весь объект по нужному свойству
-		updatedOrderForm[inputIdentifier] = updatedFormElement;
 		this.setState({orderForm: updatedOrderForm, formIsValid: formIsValid});
 	}
 
@@ -208,7 +208,7 @@ class ContactData extends Component {
 					<Button btnType="Success" disabled={!this.state.formIsValid}>ORDER</Button>
 				</form>
 		);
-		if (this.state.loading) {
+		if (this.props.loading) {
 			form = <Spinner />;
 		}
 		return (
@@ -222,9 +222,18 @@ class ContactData extends Component {
 
 const mapStateToProps = state => {
 	return {
-		ings: state.ingredients,
-		price: state.totalPrice
+		ings: state.burgerBuilder.ingredients,
+		price: state.burgerBuilder.totalPrice,
+		loading: state.order.loading,
+		token: state.auth.token,
+		userId: state.auth.userId
 	}
 }
 
-export default connect(mapStateToProps)(ContactData);
+const mapDispatchToProps = dispatch => {
+	return {
+		onOrderBurger: (orderData, token) => dispatch(actions.purchaseBurger(orderData, token))
+	}
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(withErrorHandler(ContactData, axios));

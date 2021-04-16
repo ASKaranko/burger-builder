@@ -1,11 +1,12 @@
 import React, {Component} from 'react';
 import CheckoutSummary from '../../components/Order/CheckoutSummary/CheckoutSummary';
 import ContactData from "./ContactData/ContactData";
-import {Route} from 'react-router-dom';
+import {Route, Redirect} from 'react-router-dom';
 import {connect} from 'react-redux';
+// import * as actionTypes from '../../store/actions/index';
 
 class Checkout extends Component {
-	// State удален, заменен state в reducer Redux
+	// State удален, заменен state в burgerBuilder Redux
 
 	// state = {
 	// 	ingredients: null,
@@ -13,7 +14,7 @@ class Checkout extends Component {
 	// }
 
 	//Извелечение игредиентов и их параметров с помощью location
-	// Метод componentWillMount удален, так как используется reducer
+	// Метод componentWillMount удален, так как используется burgerBuilder
 	// и параметры игредиентов не передаются более через queryParams
 
 	// componentWillMount() {
@@ -29,50 +30,68 @@ class Checkout extends Component {
 	// 	}
 	// 	this.setState({ingredients: ingredients, totalPrice: price});
 	// }
-	//
-	// checkoutCancelledHandler = () => {
-	// 	this.props.history.goBack();
+
+	// componentWillMount() {
+	// 	// на самом деле подписки в WillMount не вызывают изменение state, поэтому
+	// 	// при повторном render мы будет иметь старое значение purchased и оно будет true
+	// 	this.props.onInitPurchase();
 	// }
+
+	checkoutCancelledHandler = () => {
+		this.props.history.goBack();
+	}
 
 	checkoutContinuedHandler = () => {
 		this.props.history.replace('/checkout/contact-data');
 	}
 
 	render() {
-		return (
-				<div>
-					<CheckoutSummary
-							ingredients={this.props.ings}
-							checkoutCancelled={this.checkoutCancelledHandler}
-							checkoutContinued={this.checkoutContinuedHandler}
-					/>
-					<Route
-							path={this.props.match.path + '/contact-data'}
-							// используем не component props, а render, чтобы
-							// добавить в ContactData компонент props ингредиентов и цены
-							// Данный способ имеет особенность: МЫ НЕ ПЕРЕДАЕМ this.props.history, как
-							// в случае с component - решение передать это отдельным props в render методе
-							// или обернуть ContactData с использованием withRouter
-							// render={(props) => (<ContactData
-							// 		ingredients={this.props.ings}
-							// 		price={this.state.totalPrice} {...props}/>)}
+		let summary = <Redirect to="/" />;
+		if (this.props.ings) {
+			const purchasedRedirect = this.props.purchased ? <Redirect to="/" /> : null;
+					summary = (
+					<div>
+						{purchasedRedirect}
+						<CheckoutSummary
+								ingredients={this.props.ings}
+								checkoutCancelled={this.checkoutCancelledHandler}
+								checkoutContinued={this.checkoutContinuedHandler}
+						/>
+						<Route
+								path={this.props.match.path + '/contact-data'}
+								// используем не component props, а render, чтобы
+								// добавить в ContactData компонент props ингредиентов и цены
+								// Данный способ имеет особенность: МЫ НЕ ПЕРЕДАЕМ this.props.history, как
+								// в случае с component - решение передать это отдельным props в render методе
+								// или обернуть ContactData с использованием withRouter
+								// render={(props) => (<ContactData
+								// 		ingredients={this.props.ings}
+								// 		price={this.state.totalPrice} {...props}/>)}
 
-							// Render не нужен, так как используем глобальный Redux state далее
-							component={ContactData}
-					/>
-				</div>
-		);
+								// Render не нужен, так как используем глобальный Redux state далее
+								component={ContactData}
+						/>
+					</div>
+			);
+		}
+		return summary;
 	}
 }
 
 const mapStateToProps = state => {
 	return {
-		ings: state.ingredients
+		ings: state.burgerBuilder.ingredients,
+		purchased: state.order.purchased,
 	}
 }
 
-// mapDispatchToProps тут не нужен, так как мы не добавляем никакие actions
-// в этом компоненте, если же не нужно было бы состояние, то в connect первым
+// const mapDispatchToProps = dispatch => {
+// 	return {
+// 		onInitPurchase: () => dispatch(actionTypes.purchaseInit())
+// 	};
+// }
+
+// если же не нужно указывать mapStateToProps, то в connect первым
 // параметром нужно было бы указать null
 
 export default connect(mapStateToProps)(Checkout);

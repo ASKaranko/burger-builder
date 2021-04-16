@@ -8,7 +8,7 @@ import Spinner from '../../components/UI/Spinner/Spinner';
 import withErrorHandler from "../../hoc/withErrorHandler/withErrorHandler";
 import axios from '../../axios-orders';
 import {connect} from 'react-redux';
-import * as actionTypes from '../../store/actions';
+import * as actions from '../../store/actions/index';
 
 class BurgerBuilder extends Component {
 	// constructor(props) {
@@ -18,8 +18,8 @@ class BurgerBuilder extends Component {
 
 	state = {
 		purchasing: false,
-		loading: false,
-		error: false
+		// loading: false,
+		// error: false
 	}
 
 	componentDidMount() {
@@ -32,6 +32,9 @@ class BurgerBuilder extends Component {
 		// 		.catch(error => {
 		// 			this.setState({error: true});
 		// 		})
+
+		// Обращение через axios перенесен в BurgerBuilderActions
+		this.props.onInitIngredients();
 	}
 
 	updatePurchaseState = (ingredients) => {
@@ -42,7 +45,12 @@ class BurgerBuilder extends Component {
 	}
 
 	purchaseHandler = () => {
+		if (this.props.isAuthenticated) {
 		this.setState({purchasing: true});
+		} else {
+			this.props.onSetAuthRedirectPath('/checkout');
+			this.props.history.push('/auth');
+		}
 	}
 
 	purchaseCancelHandler = () => {
@@ -87,7 +95,7 @@ class BurgerBuilder extends Component {
 
 		// Использование queryParams для передачи ингредиентов и их количества
 		// Используется для перехода на следующую страницу checkout
-		// Заменено reducer в Redux, оставлен только переход
+		// Заменено burgerBuilder в Redux, оставлен только переход
 
 		// const queryParams = [];
 		// for (let i in this.state.ingredients) {
@@ -101,13 +109,17 @@ class BurgerBuilder extends Component {
 		// queryParams.push('price=' + this.props.price);
 		// const queryString = queryParams.join('&');
 
+		// Добавлен как замена WillMount в Checkout, так как
+		// он нужен тут, раньше checkout
+		this.props.onInitPurchase();
+
 		this.props.history.push({
 			pathname: '/checkout',
 			// search: '?' + queryString
 		});
 	}
 
-	// Эти методы заменены логикой reducer в Redux
+	// Эти методы заменены логикой burgerBuilder в Redux
 
 	// addIngredientHandler = (type) => {
 	// 	const oldCount = this.state.ingredients[type];
@@ -150,7 +162,7 @@ class BurgerBuilder extends Component {
 		}
 		// получаем такой объект {salad: true, bacon: false, ...}
 		let orderSummary = null;
-		let burger = this.state.error ? <p>Ingredients can't be loaded</p> : <Spinner />;
+		let burger = this.props.error ? <p>Ingredients can't be loaded</p> : <Spinner />;
 
 		if (this.props.ings) {
 			burger = (
@@ -163,6 +175,7 @@ class BurgerBuilder extends Component {
 								purchasable={this.updatePurchaseState(this.props.ings)}
 								ordered={this.purchaseHandler}
 								price={this.props.price}
+								isAuth={this.props.isAuthenticated}
 						/>
 					</Aux>
 			);
@@ -173,10 +186,10 @@ class BurgerBuilder extends Component {
 					purchaseContinued={this.purchaseContinueHandler}
 			/>;
 		}
-
-		if (this.state.loading) {
-			orderSummary = <Spinner />;
-		}
+		// loading перемещен в redux
+		// if (this.state.loading) {
+		// 	orderSummary = <Spinner />;
+		// }
 
 		return (
 				<Aux>
@@ -191,21 +204,26 @@ class BurgerBuilder extends Component {
 
 const mapStateToProps = state => {
 	return {
-		ings: state.ingredients,
-		price: state.totalPrice
+		ings: state.burgerBuilder.ingredients,
+		price: state.burgerBuilder.totalPrice,
+		error: state.burgerBuilder.error,
+		isAuthenticated: state.auth.token !== null,
+
 	}
 }
 
 const mapDispatchToProps = dispatch => {
 	return {
-		onIngredientAdded: (ingName) => dispatch({
-			type: actionTypes.ADD_INGREDIENT,
-			ingredientName: ingName
-		}),
-		onIngredientRemoved: (ingName) => dispatch({
-			type: actionTypes.REMOVE_INGREDIENT,
-			ingredientName: ingName
-		}),
+		onIngredientAdded: (ingName) =>
+				dispatch(actions.addIngredient(ingName)),
+		onIngredientRemoved: (ingName) =>
+				dispatch(actions.removeIngredient(ingName)),
+		onInitIngredients: () =>
+				dispatch(actions.initIngredients()),
+		onInitPurchase: () =>
+				dispatch(actions.purchaseInit()),
+		onSetAuthRedirectPath: (path) =>
+				dispatch(actions.setAuthRedirectPath(path)),
 	}
 }
 
