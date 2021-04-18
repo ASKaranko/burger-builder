@@ -8,7 +8,7 @@ class OrderSummary extends Component {
 	// OrderSummary обновляется, только если модалка меняет свой props.show
 
 	componentDidUpdate(prevProps, prevState, snapshot) {
-		console.log('[OrderSummary] DidUpdate');
+		// console.log('[OrderSummary] DidUpdate');
 	}
 
 	render() {
