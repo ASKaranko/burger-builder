@@ -25,7 +25,7 @@ const store = createStore(rootReducer, composeEnhancers(applyMiddleware(thunk)))
 // Provider Redux должен включать в себя и BrowserRouter,
 // он должен быть самым первым компонентом
 ReactDOM.render(<Provider store={store}><BrowserRouter
-			// basename="/askaranko.co/burger-builder/"
+			basename="/askaranko.co/burger-builder/"
 	><App /></BrowserRouter></Provider>, document.getElementById('root'));
 
 // If you want to start measuring performance in your app, pass a function
